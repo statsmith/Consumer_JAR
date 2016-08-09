@@ -192,7 +192,7 @@ server <- function(input, output, session) {
                         group_by(Attribute) %>% 
                         mutate(myTotal = sum(myN),
                                myProportion = myN/myTotal,
-                               mySE = sqrt(myProportion*(1-myProportion)/myN),
+                               mySE = sqrt(myProportion*(1-myProportion)/myTotal),
                                myLCL = pmax(0, round(100*(myProportion - 2*mySE),0)),
                                myUCL = pmin(100, round(100*(myProportion + 2*mySE), 0)),
                                myPercent = round(100*myProportion, 0)) %>% 
@@ -246,10 +246,10 @@ server <- function(input, output, session) {
         myPlot <- reactive({
                 
                 validate(
-                        need(!is.null(input$mySample), "Select Samples Column..."),
-                        need(!is.null(input$mySampleSelect), "Select Sample to Plot..."),
-                        need(!is.null(input$myHedonic), "Select Liking Column..."),
-                        need(!is.null(input$myJARs), "Select JAR Columns...")
+                        need(!is.na(input$mySample), "Select Samples Column..."),
+                        need(!is.na(input$mySampleSelect), "Select Sample to Plot..."),
+                        need(!is.na(input$myHedonic), "Select Liking Column..."),
+                        need(!is.na(input$myJARs), "Select JAR Columns...")
                 )
        
                 req(!is.infinite(myMaxTooMuch()))
