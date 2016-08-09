@@ -89,7 +89,7 @@ server <- function(input, output, session) {
                 
                 myNewJARs <- names(df1)[grep("_JAR|\\.JAR", names(df1))]
                 
-                updateSelectInput(session, inputId = "myJARs", choices = myNewJARs, selected = myNewJARs)
+                updateSelectInput(session, inputId = "myJARs", choices = names(df1), selected = myNewJARs)
                 updateSelectInput(session, inputId = "myHedonic", choices = names(df1), selected = "Overall.Liking")
                 updateSelectInput(session, inputId = "mySampleSelect", choices = unique(df1[[input$mySample]]))
                 
@@ -413,14 +413,18 @@ server <- function(input, output, session) {
                         filter(Response == 3 & myPercent < input$myJARRef) %>% 
                         select(Attribute)
                 
+                print(dfPlot)
+                print(dfAttributes)
+                
                 dfRecommend <- dfPlot %>% 
                         select(Attribute, Response, Weighted.Penalty) %>% 
                         filter(Response != 3) %>% 
                         inner_join(dfAttributes) %>% 
                         mutate(Response = factor(Response, levels=c(1,5), labels=c("Too.Little","Too.Much"))) %>% 
-                        spread(key = Response, value = Weighted.Penalty) %>% 
+                        spread(key = Response, value = Weighted.Penalty, fill=0) %>% 
                         mutate(Recommendation = mapply(fRecommend, Too.Little, Too.Much, -myCutOff)) %>% 
                         select(-Too.Little, -Too.Much)
+                
                 
                 dfRecommend
                 
