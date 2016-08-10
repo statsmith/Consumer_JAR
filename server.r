@@ -33,7 +33,7 @@ fGetValues <- function(x){
 fRecommend <- function(Too.Little, Too.Much, myCutOff){
         
         myRatio <- abs(0.0000001 + Too.Little / Too.Much)
-        
+      
         if(Too.Little < myCutOff & myRatio > 1.5){
                 myRecommend <- "Increase"
         } else if (Too.Much < myCutOff & myRatio < 0.67){
@@ -250,6 +250,7 @@ server <- function(input, output, session) {
                         need(!is.na(input$mySampleSelect), "Select Sample to Plot..."),
                         need(!is.na(input$myHedonic), "Select Liking Column..."),
                         need(!is.na(input$myJARs), "Select JAR Columns...")
+                        
                 )
        
                 req(!is.infinite(myMaxTooMuch()))
@@ -368,11 +369,10 @@ server <- function(input, output, session) {
         output$downloadPlot = downloadHandler(
                 filename = 'Plot.PNG',
                 content = function(file) {
-                        device <- function(..., width, height) {
-                                grDevices::png(..., width = width, height = height,
-                                               res = 300, units = "in")
+                        device <- function(..., width=width, height=height) {
+                                grDevices::png(..., width = width, height = height, units = "in", res = 300)
                         }
-                        ggsave(file, plot = myPlot(), device = device)
+                        ggsave(file, plot = myPlot(), device = device, width = 7, height = 3, units = c("in"))
                 })
         
         
@@ -407,27 +407,33 @@ server <- function(input, output, session) {
                 dfPlot <- dfPlot()
                 df1 <- df1()
                 
-                myCutOff <- sd(df1[[input$myHedonic]]) * 4 * 0.03  # Assumes SD ~ 25% of Scale and 3% of Scale is Relevant
+                myCutOff <- sd(df1[[input$myHedonic]], na.rm = TRUE) * 4 * 0.03  # Assumes SD ~ 25% of Scale and 3% of Scale is Relevant
                 
                 dfAttributes <- dfPlot %>% 
                         filter(Response == 3 & myPercent < input$myJARRef) %>% 
                         select(Attribute)
                 
-                print(dfPlot)
-                print(dfAttributes)
-                
-                dfRecommend <- dfPlot %>% 
-                        select(Attribute, Response, Weighted.Penalty) %>% 
-                        filter(Response != 3) %>% 
-                        inner_join(dfAttributes) %>% 
-                        mutate(Response = factor(Response, levels=c(1,5), labels=c("Too.Little","Too.Much"))) %>% 
-                        spread(key = Response, value = Weighted.Penalty, fill=0) %>% 
-                        mutate(Recommendation = mapply(fRecommend, Too.Little, Too.Much, -myCutOff)) %>% 
-                        select(-Too.Little, -Too.Much)
+                if(nrow(dfAttributes) > 0){
+                        
+                        dfRecommend <- dfPlot %>% 
+                                select(Attribute, Response, Weighted.Penalty) %>% 
+                                filter(Response != 3) %>% 
+                                inner_join(dfAttributes) %>% 
+                                mutate(Response = factor(Response, levels=c(1,5), labels=c("Too.Little","Too.Much"))) %>% 
+                                spread(key = Response, value = Weighted.Penalty, fill=0) %>% 
+                                mutate(Recommendation = mapply(fRecommend, Too.Little, Too.Much, -myCutOff)) %>%
+                                select(-Too.Little, -Too.Much)
+                        
+                } else { 
+                        
+                        dfRecommend <- data.frame(Recommend = "None")
+                        names(dfRecommend) <- "Recommendation"
+                }
                 
                 
                 dfRecommend
                 
+
         }, options = list(dom = "t"))
         
         
